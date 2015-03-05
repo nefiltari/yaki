@@ -1,6 +1,5 @@
-# anonyfox:tags
-
-A fast approach to extract relevant tags from any text string. Works on the client and on the server. 
+# Yaki
+Yaki can capture relevant tags from any bunch of text. Works on the client and on the server. 
 
 *Beware*: This is an early alpha test release and NOT suitable for production.
 

@@ -1,1 +1,1 @@
-Tags = this.Tags;
+Yaki = this.Yaki;
