@@ -1,5 +1,5 @@
-@StopWords or= {}
-@StopWords.en = [
+@Stopwords or= {}
+@Stopwords.en = [
   "a"
   "able"
   "about"

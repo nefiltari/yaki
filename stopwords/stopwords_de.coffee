@@ -1,5 +1,5 @@
-@StopWords or= {}
-@StopWords.de = [
+@Stopwords or= {}
+@Stopwords.de = [
   "ab"
   "bei"
   "da"
