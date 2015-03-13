@@ -18,12 +18,12 @@ To test k gram stemming and to find similar words.
         Der Schriftsteller ist im Alter von 66 Jahren bei der CIA gestorben. Auch mit 
         Computerspielen hatte der Kultautor engen Kontakt.
       """
-      result = Yaki(text, {language: 'de'}).split().stem()
+      #result = Yaki(text, {language: 'de'}).split().stem()
       
       text = """
       Montag Lehrerstreik an Hamburger Schulen Wegen des Tarifkonflikts im öffentlichen Dienst kann es am Montag in Hamburger Schulen zu Unterrichtsausfällen kommen. Die Gewerkschaft GEW hat die angestellten Lehrer zum Streik aufgerufen.
       """
-      result = Yaki(text, {language: 'de'}).analyse()
+      #result = Yaki(text, {language: 'de'}).analyse()
       #showSimilarities result
       #console.log result
       test.equal true, true  
@@ -31,15 +31,14 @@ To test k gram stemming and to find similar words.
       text = """
         FC Bayern München und FC Bayern München.
       """
-      result = Yaki(text, {language: 'de'}).split().stem().calculate().combine().rank()
-      console.log result.similarities
-      console.log result.combinators
+      result = Yaki(text, {language: 'de'}).analyse()
+      console.log result
       
       text = """
         3. Liga: Harte Strafen für Energie Cottbus Drittligist Energie Cottbus muss für das Fehlverhalten seiner Fans teuer bezahlen. Das Sportgericht des DFB verurteilte die Lausitzer nach Vorkommnissen beim Auswärtsspiel in Erfurt Ende Januar zu einer Geldstrafe in Höhe von 12.000 Euro und einem Teilausschluss auf Bewährung.
       """
-      result = Yaki(text, {language: 'de'}).split().stem().calculate().combine().rank()
-      console.log result.similarities
+      result = Yaki(text, {language: 'de'}).analyse()
+      console.log result
       
 # Outputs
 

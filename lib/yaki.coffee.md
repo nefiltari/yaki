@@ -44,7 +44,7 @@ The algorithms need some metrics to do the right things in an acceptable range.
       positionCoefficient: 1.0
       capitalizeBonus: 10
       akkronymBonus: 20
-      tagBonus: 10
+      tagBonus: 30
       # Word Combination (Yaki.combine)
       combinationOccurences: 2
       sourceMinQuality: 5
@@ -92,7 +92,7 @@ The entropy from a term. The source parameter define the relativ frequency from 
       sum = (akk, char) ->
         if source[char]?
           akk + (source[char] * (Math.log(source[char]) / Math.log(2)))
-        else akk + 1
+        else akk
       -1 * term.split('').reduce sum, 0
       
 ## Splitting
@@ -111,19 +111,19 @@ The splitting process cuts a text in single terms. Each term is normalized.
       ]
       # Split text into words
       text = dictionary.text.replace /[\s\-]+/g, ' '
-      dictionary.terms = text.split ' '
-      dictionary.count = dictionary.terms.length
       # Convert words to terms
-      dictionary.terms = dictionary.terms.map (word) ->
+      dictionary.terms = text.split(' ').map (word, id) ->
         entry = {}
-        entry.word = word
+        entry.id = id
         entry.type = switch
           when regex[0].test(word) then 'akkr'  # matches U.S.A, u.s.a.
           when regex[1].test(word) then 'akkr'  # matches USA, HTTP but not A (single letter)
           when regex[2].test(word) then 'capi'  # matches capitalized words
           else 'norm'
-        entry.term = normalize entry.word, entry.type
+        entry.term = normalize word, entry.type
         return entry
+      # Count Terms
+      dictionary.count = dictionary.terms.length
       # Optional Pre-Filter to reduce the number of terms goes here eg. StopWords
       dictionary.terms = _.filter dictionary.terms, (entry) ->
         not _.contains Yaki.Stopwords[lang], entry.term
@@ -219,7 +219,6 @@ Find any word combinations and semantical rules between words/terms.
     Yaki.combine = (dictionary, context) ->
       dictionary = Yaki.call this, dictionary, context
       return dictionary unless dictionary.similarities
-      dictionary.combinators = []
       for similarity, sid in dictionary.similarities
         combo = {}
         best = -1
@@ -227,16 +226,16 @@ Find any word combinations and semantical rules between words/terms.
         for tid in similarity when dictionary.terms[tid].quality > Yaki.Config.sourceMinQuality
           next = dictionary.terms[tid+1]
           if next? and next.similar? and next.quality > Yaki.Config.targetMinQuality
-            # Gather diffrent similar classes that direct follow a word
+            # Gather different similar classes that direct follow a word          
             combo[next.similar] = (combo[next.similar] or 0) + 1
-            if combo[next.similar] > Yaki.Config.combinationOccurences # high pass
+            if combo[next.similar] >= Yaki.Config.combinationOccurences # high pass
               if (combo[next.similar] * next.quality) > quality
                 best = next.similar
                 quality = combo[next.similar] * next.quality
         if best > -1
           for tid in similarity
             if _.contains dictionary.similarities[best], (tid+1)
-              dictionary.combinators.push tid
+              dictionary.terms[tid].follow = tid+1
       return dictionary
     
 ## Ranking
@@ -246,19 +245,35 @@ Rank the Terms for better access. The top most terms (highest quality) can used 
       dictionary = Yaki.call this, dictionary, context
       return dictionary unless dictionary.terms
       dictionary.ranking = _.sortBy dictionary.terms, 'quality'
-      dictionary.ranking = _.filter dictionary.ranking, (term) ->
-        term.quality > Yaki.Config.minQuality
       dictionary.ranking.reverse()
       return dictionary
       
 # Analysing
-This function is an full standard process for text mining and analysing and combines different functions in a logical order to retrieve ranked tags.
+This function is an full standard process for text mining and analysing and combines different functions in a logical order to retrieve ranked normalized and combined tags.
 
     Yaki.analyse = (dictionary, context) ->
       dictionary = Yaki.call this, dictionary, context
       return dictionary unless dictionary.text
-      dictionary.split().stem().calculate().combine().rank()
+      result = dictionary.split().stem().calculate().combine().rank().ranking
+      # Filter the ranking (high pass) by a minimum quality
+      result = _.filter result, (entry) ->
+        entry.quality > Yaki.Config.minQuality
+      # Filter terms that has the same similarity class (behold the best similar term)
+      similarities = []
+      result = _.filter result, (entry) ->
+        if entry.similar? and _.contains similarities, entry.similar
+          return false
+        else
+          similarities.push entry.similar
+          return true
+      # Look up for word combinations (Map + Filter) and sign used combinations
+      used = []
+      result = for entry in result when not _.contains used, entry.id
+        next = entry
+        while next.follow?
+          next = dictionary.terms[next.follow]
+          entry.term = "#{entry.term} #{next.term}"
+          used.push next.id 
+        entry
       # Convert to a simple tags array
-      _.uniq dictionary.ranking.map (entry) -> entry.term
-      
-      
+      _.uniq result.map (entry) -> entry.term
