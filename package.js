@@ -21,12 +21,6 @@ Package.onUse(function(api) {
 
 Package.onTest(function(api) {
   api.use(['tinytest','coffeescript','underscore'],['client','server']);
-  api.addFiles([
-    'stopwords/stopwords_de.coffee',
-    'stopwords/stopwords_en.coffee',
-    'lib/vocabulary.coffee.md',
-	  'lib/yaki.coffee.md',
-	  'globals.js'
-  ],['client','server']);
+  api.use('nefiltari:yaki',['client','server']);
   api.addFiles('test.coffee.md');
 });
