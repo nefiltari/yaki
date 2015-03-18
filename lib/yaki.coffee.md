@@ -14,7 +14,7 @@ The `context` in an optional object that have follwoing keys:
       else
         dictionary = new Array
         dictionary.context = context or {}
-        lang = context.language or 'en'
+        lang = dictionary.context.language or 'en'
         lang = if _.contains(Vocabulary.support, lang) then lang or 'en'
         dictionary.context.language = lang
         dictionary.split = Yaki.split
