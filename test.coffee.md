@@ -31,14 +31,14 @@ To test k gram stemming and to find similar words.
       text = """
         FC Bayern München und FC Bayern München.
       """
-      result = Yaki(text, {language: 'de'}).analyse()
-      console.log result
+      result = Yaki(text, {language: 'de'}).extract()
+      console.log _.map result, (elem) -> elem
       
       text = """
         3. Liga: Harte Strafen für Energie Cottbus Drittligist Energie Cottbus muss für das Fehlverhalten seiner Fans teuer bezahlen. Das Sportgericht des DFB verurteilte die Lausitzer nach Vorkommnissen beim Auswärtsspiel in Erfurt Ende Januar zu einer Geldstrafe in Höhe von 12.000 Euro und einem Teilausschluss auf Bewährung.
       """
-      result = Yaki(text, {language: 'de'}).analyse()
-      console.log result
+      result = Yaki(text, {language: 'de'}).extract()
+      console.log _.map result, (elem) -> elem
       
 # Outputs
 

@@ -1,9 +1,9 @@
 # Yaki - The standalone Tagging Engine
 Yaki can capture all relevant tokens from a bunch of text. That means you can typecast your text with a set of tags. The `context` describe known facts in which the text is interpreted. Text analyse or text mining is a text transformation process to a chosen abstraction level for the right information need.
 The `context` in an optional object that have follwoing keys:
-- `language`: Language abbreviation (TLD)
-- `moderated`: Is this a moderated text (true/false)
-- `type`: A text type like `'headline'` or `'summary'`
+- `language`: Language abbreviation (TLD-Specification) (Default: 'en')
+- `natural`: Use only natural words instead of words like: foo_bar, foo-bar, 1__0 (Default: true)
+- `moderated`: Is this a moderated text (true/false) (Default: true)
 - `tags`: Possible an array of tags that **can** describe this article (more wheight on these tags when found)
 
 
@@ -12,8 +12,7 @@ The `context` in an optional object that have follwoing keys:
         @context = context if context
         return this
       else
-        dictionary = {}
-        dictionary.result = []
+        dictionary = new Array
         dictionary.context = context or {}
         dictionary.split = Yaki.split
         dictionary.clean = Yaki.clean
@@ -21,8 +20,7 @@ The `context` in an optional object that have follwoing keys:
         dictionary.calculate = Yaki.calculate
         dictionary.combine = Yaki.combine
         dictionary.rank = Yaki.rank
-        dictionary.convert = Yaki.convert
-        dictionary.analyse = Yaki.analyse
+        dictionary.extract = Yaki.extract
         if _.isArray text
           dictionary.text = text.join(' ')
           dictionary = dictionary.split()
@@ -51,7 +49,7 @@ The algorithms need some metrics and variables to do the right things in an acce
       entropieStrength: 2
       frequencyCoefficient: 1.0
       positionCoefficient: 1.0
-      capitalizeBonus: 10
+      capitalizeBonus: 5
       akkronymBonus: 20
       tagBonus: 30
       # Word Combination (Yaki.combine) & Analyse (Yaki.analyse)
@@ -107,13 +105,15 @@ The splitting process cuts a text into single terms.
     Yaki.split = (dictionary, context) ->
       dictionary = Yaki.call this, dictionary, context
       return dictionary unless dictionary.text
+      dictionary.length = 0
       # Split text into words
       text = dictionary.text.replace /[\s\-]+/g, ' '
       dictionary.terms = text.split(' ').map (term, id) ->
-        id: id
-        position: id
-        term: term
-      dictionary.result = dictionary.terms
+        dictionary.push term
+        entry =  
+          id: id
+          position: id
+          term: term
       return dictionary
       
 ## Cleaning
@@ -137,15 +137,24 @@ Clean the result. Define a term type and normalize each word. Filter the list wi
           when regex[1].test(entry.term) then 'akkr'  # matches USA, HTTP but not A (single letter)
           when regex[2].test(entry.term) then 'capi'  # matches capitalized words
           else 'norm'
-        entry.term = normalize entry.term, entry.type
-      # Count Words (before the stopword filter)
-      dictionary.words = dictionary.terms.length 
+        entry.term = normalize(entry.term, entry.type)
+      # Count Words (before the any filter steps in)
+      dictionary.words = dictionary.terms.length
+      # Filter blank terms
+      dictionary.terms = _.reject dictionary.terms, (entry) ->
+        entry.term is ''
+      # If natural filter are defined (isnt false for '===')
+      if dictionary.context.natural isnt false
+        dictionary.terms = _.reject dictionary.terms, (entry) ->
+          new RegExp(/\_/).test entry.term
       # Filter with Stopwords
-      dictionary.terms = _.filter dictionary.terms, (entry) ->
-        not _.contains Yaki.Stopwords[lang], entry.term
+      dictionary.terms = _.reject dictionary.terms, (entry) ->
+        _.contains Yaki.Stopwords[lang], entry.term
       # Recalculate Id's and link to result
-      dictionary.terms[id].id = id for entry, id in dictionary.terms
-      dictionary.result = dictionary.terms
+      dictionary.length = 0
+      for entry, id in dictionary.terms
+        entry.id = id
+        dictionary.push entry.term
       return dictionary    
 
 ## Stemmming
@@ -218,13 +227,13 @@ Calculates each token entropy with language vocabular and token frequency. Add b
         # Step 3: Capitalized word bonus and Akkronym Bonsu (Config: Bonus)
         quality = quality + Yaki.Config.capitalizeBonus if entry.type is 'capi'
         quality = quality + Yaki.Config.akkronymBonus if entry.type is 'akkr'
-        # Step 4: Term Position (Config: Coefficient)
-        if dictionary.context.moderated
+        # Step 4: Term Position (Config: Coefficient) (isnt false for '===')
+        #if dictionary.context.moderated isnt false
           # Standard normal distribution (Normalized for x and y)
-          # Construct the normalized value from id
-          x = -4 + (id / dictionary.terms.length) * 8
-          weight = 1 - ((1 / Math.sqrt(2 * Math.PI)) * Math.exp(-0.5*x*x))
-          quality = quality * Yaki.Config.positionCoefficient * weight
+          # Construct the normalized value from id (currently disabled)
+          #x = -4 + (id / dictionary.terms.length) * 8
+          #weight = 1 - ((1 / Math.sqrt(2 * Math.PI)) * Math.exp(-0.5*x*x))
+          #quality = quality * Yaki.Config.positionCoefficient * weight
         # Step 5: Known Context Tags (Config: Bonus)
         if dictionary.context.tags?
           if _.contains dictionary.context.tags, entry.term
@@ -257,6 +266,7 @@ Find any word combinations and semantical rules between words/terms.
           for tid in similarity
             if _.contains dictionary.similarities[best], (tid+1)
               dictionary.terms[tid].follow = tid+1
+              dictionary.terms[tid].quality += dictionary.terms[tid+1].quality
       return dictionary
     
 ## Ranking
@@ -265,31 +275,26 @@ Rank the Terms for better access. The top most terms (highest quality) can used 
     Yaki.rank = (dictionary, context) ->
       dictionary = Yaki.call this, dictionary, context
       return dictionary unless dictionary.terms
-      dictionary.result = _.sortBy dictionary.terms, 'quality'
-      dictionary.result.reverse()
-      return dictionary
+      dictionary.ranking = _.sortBy dictionary.terms, 'quality'
+      dictionary.ranking.reverse()
+      dictionary.length = 0
+      dictionary.push entry.term for entry in dictionary.ranking
+      return dictionary    
       
-## Convert
-Converts the result presentation to an bag of terms.
-
-    Yaki.convert = (dictionary, context) ->
-      dictionary = Yaki.call this, dictionary, context
-      return dictionary unless dictionary.result
-      _.uniq dictionary.result.map (entry) -> entry.term      
-      
-## Analysing
+## Extract
 This function is an full standard process for text mining and analysing and combines different functions in a logical order to retrieve ranked normalized and combined tags.
 
-    Yaki.analyse = (dictionary, context) ->
+    Yaki.extract = (dictionary, context) ->
       dictionary = Yaki.call this, dictionary, context
       return dictionary unless dictionary.text
       dictionary = dictionary.split().clean().stem().calculate().combine().rank()
+      result = dictionary.ranking
       # Step 1: Filter the ranking (high pass) by a minimum quality
-      dictionary.result = _.filter dictionary.result, (entry) ->
+      result = _.filter result, (entry) ->
         entry.quality > Yaki.Config.minQuality
       # Step 2: Filter terms that has the same similarity class (behold the best similar term)
       similarities = []
-      dictionary.result = _.filter dictionary.result, (entry) ->
+      result = _.filter result, (entry) ->
         if entry.similar? and _.contains similarities, entry.similar
           return false
         else
@@ -297,12 +302,15 @@ This function is an full standard process for text mining and analysing and comb
           return true
       # Step 3: Look up for word combinations (Map + Filter) and sign used combinations
       used = []
-      dictionary.result = for entry in dictionary.result when not _.contains used, entry.id
+      result = for entry in result when not _.contains used, entry.id
         next = entry
         while next.follow?
           next = dictionary.terms[next.follow]
           entry.term = "#{entry.term} #{next.term}"
           used.push next.id
         entry
-      # Convert to a simple array
-      dictionary.convert()
+      # Update Dictionary
+      dictionary.length = 0
+      dictionary.push entry.term for entry in result
+      # Return the dictionary
+      return dictionary
