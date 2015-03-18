@@ -3,6 +3,7 @@ The vocabulary define different letter sets / alphabets and there relative frequ
 (Letter frequency)[http://en.wikipedia.org/wiki/Letter_frequency].
 
     @Vocabulary = Vocabulary = 
+      support: ['en', 'de']
 
 ## English      
 The english language letter corpus:

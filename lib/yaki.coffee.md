@@ -14,6 +14,9 @@ The `context` in an optional object that have follwoing keys:
       else
         dictionary = new Array
         dictionary.context = context or {}
+        lang = context.language or 'en'
+        lang = if _.contains(Vocabulary.support, lang) then lang or 'en'
+        dictionary.context.language = lang
         dictionary.split = Yaki.split
         dictionary.clean = Yaki.clean
         dictionary.stem = Yaki.stem
@@ -122,9 +125,9 @@ Clean the result. Define a term type and normalize each word. Filter the list wi
     Yaki.clean = (dictionary, context) ->
       dictionary = Yaki.call this, dictionary, context
       return dictionary unless dictionary.terms
+      lang = dictionary.context.language
       # Define language dependent reqex's
-      lang = dictionary.context.language or 'en'
-      vocabular = Yaki.Vocabulary[lang]
+      vocabular = Vocabulary[lang]
       regex = [
         new RegExp "^[#{vocabular.uppercase}#{vocabular.lowercase}]\\."
         new RegExp "^[#{vocabular.uppercase}]{2,}"
@@ -215,7 +218,7 @@ Calculates each token entropy with language vocabular and token frequency. Add b
     Yaki.calculate = (dictionary, context) ->
       dictionary = Yaki.call this, dictionary, context
       return dictionary unless dictionary.terms
-      lang = dictionary.context.language or 'en'
+      lang = dictionary.context.language
       for entry, id in dictionary.terms when not entry.quality?
         # Step 1: Basic Entropy (included word length and relative term frequency)
         quality = entropy entry.term, Yaki.Vocabulary[lang].frequencies
