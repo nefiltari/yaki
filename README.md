@@ -23,7 +23,7 @@ Text Retrieval classification: *morphology* and parts of *syntax* (without vocab
 ### How-To
 For simple tagging (most features are activated by default) use following syntax: 
 ```coffee
-  text = "This is a sample text to demonstrate the tagging engine `Yaki`.
+  text = "This is a sample text to demonstrate the tagging engine `Yaki`."
   console.log Yaki(text).extract()
   # -> [ 'demonstrate', 'yaki', 'engine', 'tagging' ]
 ```
