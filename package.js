@@ -1,6 +1,6 @@
 Package.describe({
   name: 'nefiltari:yaki',
-  version: '0.0.7',
+  version: '0.0.8',
   summary: 'Yaki can capture relevant tags from any bunch of text.',
   git: 'https://github.com/nefiltari/yaki.git',
   documentation: 'README.md'
@@ -13,6 +13,7 @@ Package.onUse(function(api) {
     'stopwords/stopwords_de.coffee',
     'stopwords/stopwords_en.coffee',
 	  'lib/vocabulary.coffee.md',
+    'lib/configuration.coffee.md',
 	  'lib/yaki.coffee.md',
     'globals.js'
   ],['client','server']);

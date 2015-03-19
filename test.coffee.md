@@ -32,15 +32,30 @@ To test k gram stemming and to find similar words.
         FC Bayern München und FC Bayern München.
       """
       result = Yaki(text, {language: 'de'}).extract()
-      console.log _.map result, (elem) -> elem
+      console.log result
       
       text = """
         3. Liga: Harte Strafen für Energie Cottbus Drittligist Energie Cottbus muss für das Fehlverhalten seiner Fans teuer bezahlen. Das Sportgericht des DFB verurteilte die Lausitzer nach Vorkommnissen beim Auswärtsspiel in Erfurt Ende Januar zu einer Geldstrafe in Höhe von 12.000 Euro und einem Teilausschluss auf Bewährung.
       """
-      result = Yaki(text, {language: 'fr'}).extract()
-      console.log _.map result, (elem) -> elem
+      result = Yaki(text, {language: 'de'}).extract()
+      #console.log result.terms
+      console.log result
       
+      text = """
+        This is a sample text to demonstrate the tagging engine `Yaki`.
+      """
+      result = Yaki(text).extract()
+      #console.log result.terms
+      #console.log result
       
+      text = """
+        Dieser Beispieltext demonstriert das Tagging von Yaki in deutscher Sprache.
+      """
+      result = Yaki(text, {language: 'de', tags: ['Yaki']}).extract()
+      #console.log result.terms
+      console.log result
+      
+      console.log Yaki(['legend', 'advanced.', 'MultiColor', '-> HTTP <-']).clean()
       
 # Outputs
 
