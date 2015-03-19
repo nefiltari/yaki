@@ -31,7 +31,7 @@ If you know the language then you can specify this as second parameter (use the 
 The default language is english.
 Use additional (maybe) known tags to add a stronger weight to some words.
 ```coffee
-  text = "Dieser Beispieltext demonstriert das Tagging in deutscher Sprache."
+  text = "Dieser Beispieltext demonstriert das Tagging von Yaki in deutscher Sprache."
   console.log Yaki(text, {language: 'de', tags: ['yaki']}).extract()
   # -> [ 'yaki', 'demonstriert', 'beispieltext', 'deutscher', 'sprache' ]
 ```
