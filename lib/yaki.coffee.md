@@ -326,6 +326,8 @@ This function is an full standard process for text mining and analysing and comb
           entry.term = "#{entry.term} #{next.term}"
           used.push next.id
         entry
+      # Save Result
+      dictionary.tags = result
       # Update Dictionary
       dictionary.length = 0
       dictionary.push entry.term for entry in result
