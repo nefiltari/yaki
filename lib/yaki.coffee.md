@@ -32,6 +32,7 @@ The `context` in an optional object that have follwoing keys:
         dictionary.inspect = Yaki.inspect
         # Text
         if _.isArray text
+          text = text.map (tag) -> tag.replace /\s+/g, '_'
           dictionary.text = text.join(' ')
           dictionary = dictionary.split()
         else
@@ -70,12 +71,14 @@ Normalize a word (with special characters) to a term.
       # Each logical piece or fragment from a word is sgned by an '_' e.g. 9/11 -> 9_11, hallo- -> hallo_
       # All underscores from begin and end are trimed: e.g. _hallo_ -> hallo
       # Each normalized word (term) is converted into lower case e.g. USA -> usa,
+      # Converts multiple underscores (inbound) to an whitespace (acts like a 'natural' word combination)
       str = entry.term
       str = str.replace(/\./g, '') if entry.type is 'akro'
       str = str.replace(/\'/g, '')
       str = str.replace(/[\/\\\.\-\#\+\*\:\,\?\"\`\´\=\&\%\$\§\!\(\)\]\[\<\>\;\^\°]/g, '_')
       str = str.replace(/^\_*/, '')
       str = str.replace(/\_*$/, '')
+      str = str.replace(/\_+/g, ' ')
       entry.term = str.toLowerCase()
       entry
     
@@ -154,7 +157,7 @@ Clean the result. Define a term type and normalize each word. Filter the list wi
       # If natural filter are defined (isnt false for '===')
       if dictionary.context.natural isnt false
         dictionary.terms = _.reject dictionary.terms, (entry) ->
-          new RegExp(/\_/).test entry.term
+          new RegExp(/\s/).test entry.term
       # Filter with Stopwords
       dictionary.terms = _.reject dictionary.terms, (entry) ->
         entry.type isnt 'akro' and _.contains Yaki.Stopwords[lang], entry.term
