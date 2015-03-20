@@ -264,10 +264,11 @@ Find any word combinations and semantical rules between words/terms.
       for similarity, sid in dictionary.similarities
         combo = {}
         best = -1
-        quality = 0
+        quality = -1
         for tid in similarity
           current = dictionary.terms[tid]
           next = dictionary.terms[tid+1]
+          console.log current, next
           if next? and next.similar?
             if (current.position+1) is next.position 
               # Gather different similar classes that direct follow a term          

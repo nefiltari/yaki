@@ -53,9 +53,17 @@ To test k gram stemming and to find similar words.
       """
       result = Yaki(text, {language: 'de', tags: ['Yaki']}).extract()
       #console.log result.terms
-      console.log result
+      #console.log result
       
       console.log Yaki(['legend', 'advanced.', 'MultiColor', '-> HTTP <-']).clean()
+      
+      text = """
+      **  The Avengers (2012 film) ''The Avengers'' (2012 film)  , the sixth installment in the Marvel Cinematic Universe franchise 2
+      """
+      result = Yaki(text).extract()
+      console.log result.terms
+      console.log result.similarities
+      console.log result
       
 # Outputs
 
