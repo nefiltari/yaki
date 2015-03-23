@@ -66,21 +66,21 @@ This helpers are useful for internal functionality.
 ### `normalize`
 Normalize a word (with special characters) to a term.
 
-    normalize = (entry) ->
+    normalize = (term, type, vocabulary) ->
       # Negates dot notations from akkronymes: U.S.A. -> USA
       # Each logical piece or fragment from a word is sgned by an '_' e.g. 9/11 -> 9_11, hallo- -> hallo_
       # All underscores from begin and end are trimed: e.g. _hallo_ -> hallo
       # Each normalized word (term) is converted into lower case e.g. USA -> usa,
       # Converts multiple underscores (inbound) to an whitespace (acts like a 'natural' word combination)
-      str = entry.term
-      str = str.replace(/\./g, '') if entry.type is 'akro'
+      str = term
+      str = str.replace(/\./g, '') if type is 'akro'
       str = str.replace(/\'/g, '')
-      str = str.replace(/[\/\\\.\-\#\+\*\:\,\?\"\`\´\=\&\%\$\§\!\(\)\]\[\<\>\;\^\°]/g, '_')
+      regex = new RegExp("[^#{vocabulary.uppercase}#{vocabulary.lowercase}0123456789]",'g')
+      str = str.replace(regex, '_')
       str = str.replace(/^\_*/, '')
       str = str.replace(/\_*$/, '')
       str = str.replace(/\_+/g, ' ')
-      entry.term = str.toLowerCase()
-      entry
+      str.toLowerCase()
     
 ### `toKGram`    
 Convert a term to a k-gram. For better index construction an optional callback can call each k-gram piece. Minimum for k is 2.
@@ -133,8 +133,8 @@ Clean the result. Define a term type and normalize each word. Filter the list wi
       return dictionary unless dictionary.terms
       lang = dictionary.context.language
       # Define language dependent reqex's
-      upper = Vocabulary[lang].uppercase
-      lower = Vocabulary[lang].lowercase
+      upper = Yaki.Vocabulary[lang].uppercase
+      lower = Yaki.Vocabulary[lang].lowercase
       regex = [
         new RegExp "^[^#{upper}#{lower}]*[#{lower}#{upper}]\\."
         new RegExp "^[^#{upper}#{lower}]*[#{upper}]{2,}"
@@ -142,13 +142,13 @@ Clean the result. Define a term type and normalize each word. Filter the list wi
       ]
       # Determine type and normalize each term
       last = null
-      dictionary.terms = dictionary.terms.map (entry) ->
+      for entry, i in dictionary.terms
         entry.type = switch
           when regex[0].test(entry.term) then 'akro'  # matches U.S.A, u.s.a.
           when regex[1].test(entry.term) then 'akro'  # matches USA, HTTP but not A (single letter)
           when regex[2].test(entry.term) then 'capi'  # matches capitalized words
           else 'norm'
-        last = normalize entry
+        entry.term = normalize entry.term, entry.type, Yaki.Vocabulary[lang]
       # Count Words (before the any filter steps in)
       dictionary.words = dictionary.terms.length
       # Filter blank terms
