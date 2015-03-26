@@ -3,7 +3,11 @@ The vocabulary define different letter sets / alphabets and there relative frequ
 (Letter frequency)[http://en.wikipedia.org/wiki/Letter_frequency].
 
     @Vocabulary = Vocabulary = 
-      support: ['en', 'de']
+      support: ["en", "de"]
+      letters: "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÜÖabcdefghijklmnopqrstuvwxyzäüöß0123456789"
+      lowercase: "abcdefghijklmnopqrstuvwxyzäüöß"
+      uppercase: "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÜÖ"
+      numbers: "0123456789"
 
 ## English      
 The english language letter corpus:

@@ -23,12 +23,14 @@ The `context` in an optional object that have follwoing keys:
         dictionary.context = context
         # Methods
         dictionary.split = Yaki.split
-        dictionary.clean = Yaki.clean
+        dictionary.normalize = Yaki.normalize 
+        dictionary.cleans = Yaki.cleans
         dictionary.stem = Yaki.stem
         dictionary.calculate = Yaki.calculate
         dictionary.combine = Yaki.combine
         dictionary.rank = Yaki.rank
         dictionary.extract = Yaki.extract
+        dictionary.clean = Yaki.clean
         dictionary.inspect = Yaki.inspect
         # Text
         if _.isArray text
@@ -37,7 +39,7 @@ The `context` in an optional object that have follwoing keys:
           dictionary = dictionary.split()
         else
           dictionary.text = text
-        return dictionary
+        dictionary
       
 ## Define the Vocabular
 The Vocabular describe the useable letters from diffrent languages.
@@ -66,7 +68,7 @@ This helpers are useful for internal functionality.
 ### `normalize`
 Normalize a word (with special characters) to a term.
 
-    normalize = (term, type, vocabulary) ->
+    normalize = (term, type, letters) ->
       # Negates dot notations from akkronymes: U.S.A. -> USA
       # Each logical piece or fragment from a word is sgned by an '_' e.g. 9/11 -> 9_11, hallo- -> hallo_
       # All underscores from begin and end are trimed: e.g. _hallo_ -> hallo
@@ -75,12 +77,13 @@ Normalize a word (with special characters) to a term.
       str = term
       str = str.replace(/\./g, '') if type is 'akro'
       str = str.replace(/\'/g, '')
-      regex = new RegExp("[^#{vocabulary.uppercase}#{vocabulary.lowercase}0123456789]",'g')
+      regex = new RegExp("[^#{letters}]",'g')
       str = str.replace(regex, '_')
       str = str.replace(/^\_*/, '')
       str = str.replace(/\_*$/, '')
       str = str.replace(/\_+/g, ' ')
-      str.toLowerCase()
+      # Workaround for wikipedias opensearch engine (Future: Representation Concepts)
+      if type is 'akro' then str else str.toLowerCase()
     
 ### `toKGram`    
 Convert a term to a k-gram. For better index construction an optional callback can call each k-gram piece. Minimum for k is 2.
@@ -121,20 +124,19 @@ The splitting process cuts a text into single terms.
         dictionary.push term
         entry =  
           id: id
-          position: id
           term: term
       return dictionary
       
-## Cleaning
-Clean the result. Define a term type and normalize each word. Filter the list with Stopwords.
+## Normalize
+Normalize each term to a more useable form.
 
-    Yaki.clean = (dictionary, context) ->
+    Yaki.normalize = (dictionary, context) ->
       dictionary = Yaki.call this, dictionary, context
-      return dictionary unless dictionary.terms
-      lang = dictionary.context.language
-      # Define language dependent reqex's
-      upper = Yaki.Vocabulary[lang].uppercase
-      lower = Yaki.Vocabulary[lang].lowercase
+      return dictionary unless dictionary.text
+      # Define reqex's for typing each term
+      upper = Yaki.Vocabulary.uppercase
+      lower = Yaki.Vocabulary.lowercase
+      letters = Yaki.Vocabulary.letters
       regex = [
         new RegExp "^[^#{upper}#{lower}]*[#{lower}#{upper}]\\."
         new RegExp "^[^#{upper}#{lower}]*[#{upper}]{2,}"
@@ -148,24 +150,28 @@ Clean the result. Define a term type and normalize each word. Filter the list wi
           when regex[1].test(entry.term) then 'akro'  # matches USA, HTTP but not A (single letter)
           when regex[2].test(entry.term) then 'capi'  # matches capitalized words
           else 'norm'
-        entry.term = normalize entry.term, entry.type, Yaki.Vocabulary[lang]
-      # Count Words (before the any filter steps in)
+        entry.term = normalize entry.term, entry.type, letters
+        dictionary[i] = entry.term
+      # Count Words (before the any filter/cleaning steps in)
       dictionary.words = dictionary.terms.length
-      # Filter blank terms
-      dictionary.terms = _.reject dictionary.terms, (entry) ->
-        entry.term is ''
-      # If natural filter are defined (isnt false for '===')
-      if dictionary.context.natural isnt false
-        dictionary.terms = _.reject dictionary.terms, (entry) ->
-          new RegExp(/\s/).test entry.term
-      # Filter with Stopwords
-      dictionary.terms = _.reject dictionary.terms, (entry) ->
-        entry.type isnt 'akro' and _.contains Yaki.Stopwords[lang], entry.term
-      # Recalculate Id's and link to result
-      dictionary.length = 0
-      for entry, id in dictionary.terms
-        entry.id = id
-        dictionary.push entry.term
+      dictionary
+      
+## Cleansing
+Cleans the result. Define a term type and normalize each word. Filter the list with Stopwords.
+
+    Yaki.cleans = (dictionary, context) ->
+      dictionary = Yaki.call this, dictionary, context
+      return dictionary unless dictionary.terms
+      lang = dictionary.context.language
+      for entry, i in dictionary.terms
+        # Filter blank terms
+        entry.drop = entry.term is ''
+        # If natural filter are defined (isnt false for '===')
+        if dictionary.context.natural isnt false
+          entry.drop = new RegExp(/\s/).test entry.term
+        # Filter with Stopwords
+        stopword = _.contains Yaki.Stopwords[lang], entry.term
+        entry.drop = entry.type isnt 'akro' and stopword
       return dictionary    
 
 ## Stemmming
@@ -178,7 +184,7 @@ Convert each term into a token. Each token has multiple occurences in text. That
       dictionary.similarities = []
       lang = dictionary.context.language
       config = Yaki.Configuration[lang]
-      for entry, id in dictionary.terms
+      for entry, id in dictionary.terms when not entry.drop
         # Initialize some Variables
         candidates = {}
         count = 0
@@ -223,14 +229,14 @@ Convert each term into a token. Each token has multiple occurences in text. That
       return dictionary
     
 ## Calculate Quality
-Calculates each token entropy with language vocabular and token frequency. Add bonus points to special term types. In moderated mode the Word position inside the text is also relevant.
+Calculates each token entropy with language vocabular and token frequency. Add bonus points to special term types. In moderated mode the Word position inside the text is also relevant. Needs Calculation.
 
     Yaki.calculate = (dictionary, context) ->
       dictionary = Yaki.call this, dictionary, context
       return dictionary unless dictionary.terms
       lang = dictionary.context.language
       config = Yaki.Configuration[lang]
-      for entry, id in dictionary.terms when not entry.quality?
+      for entry, id in dictionary.terms when not entry.quality and not entry.drop
         # Step 1: Basic Entropy (included word length and relative term frequency)
         quality = entropy entry.term, Yaki.Vocabulary[lang].frequencies
         quality = Math.round quality
@@ -264,6 +270,7 @@ Find any word combinations and semantical rules between words/terms.
       return dictionary unless dictionary.similarities
       lang = dictionary.context.language
       config = Yaki.Configuration[lang]
+      similar = dictionary.similarities.length - 1
       for similarity, sid in dictionary.similarities
         combo = {}
         best = -1
@@ -271,19 +278,28 @@ Find any word combinations and semantical rules between words/terms.
         for tid in similarity
           current = dictionary.terms[tid]
           next = dictionary.terms[tid+1]
-          if next? and next.similar?
-            if (current.position+1) is next.position 
-              # Gather different similar classes that direct follow a term          
-              combo[next.similar] = (combo[next.similar] or 0) + 1
-              if combo[next.similar] >= config.combinationOccurences
-                if (combo[next.similar] * next.quality) > quality
-                  best = next.similar
-                  quality = combo[next.similar] * next.quality
+          if next? and next.similar
+            # Gather different similar classes that direct follow a term          
+            combo[next.similar] = (combo[next.similar] or 0) + 1
+            if combo[next.similar] >= config.combinationOccurences
+              if (combo[next.similar] * next.quality) > quality
+                best = next.similar
+                quality = combo[next.similar] * next.quality
         if best > -1
+          similar += 1
           for tid in similarity
             if _.contains dictionary.similarities[best], (tid+1)
-              dictionary.terms[tid].follow = tid+1
-              dictionary.terms[tid].quality += dictionary.terms[tid+1].quality
+              dictionary.terms[tid].follow = true
+              dictionary.terms[tid].similar = similar
+      # Construct word combinations in dictionary.terms
+      last = null
+      for entry, i in dictionary.terms.reverse()
+        if entry.follow
+          last.drop = true
+          entry.quality += last.quality
+          entry.term = "#{entry.term} #{last.term}"
+        last = entry
+      dictionary.terms.reverse()
       return dictionary
     
 ## Ranking
@@ -292,11 +308,21 @@ Rank the Terms for better access. The top most terms (highest quality) can used 
     Yaki.rank = (dictionary, context) ->
       dictionary = Yaki.call this, dictionary, context
       return dictionary unless dictionary.terms
-      dictionary.ranking = _.sortBy dictionary.terms, 'quality'
+      dictionary.ranking = _.reject dictionary.terms, (entry) -> entry.drop
+      dictionary.ranking = _.sortBy dictionary.ranking, 'quality'
       dictionary.ranking.reverse()
       dictionary.length = 0
       dictionary.push entry.term for entry in dictionary.ranking
       return dictionary    
+      
+## Clean
+Combine (splitting), normalization and cleansing.
+
+    Yaki.clean = (dictionary, context) ->
+      dictionary = Yaki.call this, dictionary, context
+      return dictionary unless dictionary.text
+      dictionary = dictionary.split() unless dictionary.terms
+      return dictionary.normalize().cleans()
       
 ## Extract
 This function is an full standard process for text mining and analysing and combines different functions in a logical order to retrieve ranked normalized and combined tags.
@@ -306,7 +332,7 @@ This function is an full standard process for text mining and analysing and comb
       return dictionary unless dictionary.text
       lang = dictionary.context.language
       config = Yaki.Configuration[lang]
-      dictionary = dictionary.split().clean().stem().calculate().combine().rank()
+      dictionary = dictionary.split().normalize().cleans().stem().calculate().combine().rank()
       result = dictionary.ranking
       # Step 1: Filter the ranking (high pass) by a minimum quality
       if dictionary.context.filter isnt false
@@ -315,20 +341,11 @@ This function is an full standard process for text mining and analysing and comb
       # Step 2: Filter terms that has the same similarity class (behold the best similar term)
       similarities = []
       result = _.filter result, (entry) ->
-        if entry.similar? and _.contains similarities, entry.similar
+        if entry.similar and _.contains similarities, entry.similar
           return false
         else
           similarities.push entry.similar
           return true
-      # Step 3: Look up for word combinations (Map + Filter) and sign used combinations
-      used = []
-      result = for entry in result when not _.contains used, entry.id
-        next = entry
-        while next.follow?
-          next = dictionary.terms[next.follow]
-          entry.term = "#{entry.term} #{next.term}"
-          used.push next.id
-        entry
       # Save Result
       dictionary.tags = result
       # Update Dictionary
