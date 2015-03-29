@@ -297,6 +297,7 @@ Find any word combinations and semantical rules between words/terms.
         if entry.follow
           last.drop = true
           entry.quality += last.quality
+          entry.similar += last.similar
           entry.term = "#{entry.term} #{last.term}"
         last = entry
       dictionary.terms.reverse()
