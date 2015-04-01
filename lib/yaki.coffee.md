@@ -118,7 +118,7 @@ The splitting process cuts a text into single terms.
       return dictionary unless dictionary.text
       dictionary.length = 0
       # Split text into words
-      text = dictionary.text.replace /[\s\-]+/g, ' '
+      text = dictionary.text.replace /\s+/g, ' '
       dictionary.terms = text.split(' ').map (term, id) ->
         dictionary.push term
         entry =  
@@ -151,6 +151,7 @@ Normalize each term to a more useable form.
           when regex[2].test(entry.term) then 'capi'  # matches capitalized words
           else 'norm'
         entry.term = normalize entry.term, entry.type, letters
+        # Additonal Splitting from chained terms (type: part)
         for term, i in entry.term.split ' '
           if i is 0
             entry.term = term
@@ -175,11 +176,12 @@ Cleans the result. Define a term type and normalize each word. Filter the list w
       lang = dictionary.context.language
       dictionary.length = 0
       for entry, i in dictionary.terms
+        entry.drop = false
         # Filter blank terms
-        entry.drop = entry.term is ''
+        entry.drop or= entry.term is ''
         # Filter with Stopwords
         stopword = _.contains Yaki.Stopwords[lang], entry.term
-        entry.drop = entry.type isnt 'akro' and stopword
+        entry.drop or= entry.type isnt 'akro' and stopword
         # Add to result
         dictionary.push entry.term unless entry.drop
       return dictionary    
@@ -291,7 +293,7 @@ Find any word combinations and semantical rules between words/terms.
         for tid in similarity
           current = dictionary.terms[tid]
           next = dictionary.terms[tid+1]
-          if next? and next.similar
+          if next? and next.similar >= 0
             # Gather different similar classes that direct follow a term          
             combo[next.similar] = (combo[next.similar] or 0) + 1
             if combo[next.similar] >= config.combinationOccurences
@@ -356,7 +358,7 @@ This function is an full standard process for text mining and analysing and comb
       # Step 2: Filter terms that has the same similarity class (behold the best similar term)
       similarities = []
       result = _.filter result, (entry) ->
-        if entry.similar and _.contains similarities, entry.similar
+        if entry.similar >= 0 and _.contains similarities, entry.similar
           return false
         else
           similarities.push entry.similar

@@ -7,8 +7,9 @@ Each Test is a defined below and have at least the defined set of tags.
 To test k gram stemming and to find similar words.
 
       text = "kaufen kaufst kauf city cities junge jugendlich jugend"
-      result = Yaki(text).split().stem()
+      result = Yaki(text, language: 'de').extract()
       #showSimilarities result
+      console.log result
       #test.equal result.similarities, [[0,1,2],[3,4],[6,7]]
     
 # Full Tests
@@ -31,32 +32,32 @@ To test k gram stemming and to find similar words.
       text = """
         FC Bayern München und FC Bayern München.
       """
-      result = Yaki(text, {language: 'de'}).extract()
+      #result = Yaki(text, {language: 'de'}).extract()
       #console.log result.terms
-      console.log result
+      #console.log result
       
       text = """
         3. Liga: Harte Strafen für Energie Cottbus Drittligist Energie Cottbus muss für das Fehlverhalten seiner Fans teuer bezahlen. Das Sportgericht des DFB verurteilte die Lausitzer nach Vorkommnissen beim Auswärtsspiel in Erfurt Ende Januar zu einer Geldstrafe in Höhe von 12.000 Euro und einem Teilausschluss auf Bewährung.
       """
-      result = Yaki(text, {language: 'de'}).extract()
+      #result = Yaki(text, {language: 'de'}).extract()
       #console.log result.terms
-      console.log result
+      #console.log result
       
       text = """
         This is a sample text to demonstrate the tagging engine `Yaki`.
       """
-      result = Yaki(text).extract()
+      #result = Yaki(text).extract()
       #console.log result.terms
       #console.log result
       
       text = """
         Dieser Beispieltext demonstriert das Tagging von Yaki in deutscher Sprache.
       """
-      result = Yaki(text, {language: 'de', tags: ['Yaki']}).extract()
+      #result = Yaki(text, {language: 'de', tags: ['Yaki']}).extract()
       #console.log result.terms
-      console.log result
+      #console.log result
       
-      console.log Yaki(['legend', 'advanced.', 'MultiColor', '-> HTTP <-']).clean()
+      #console.log Yaki(['legend', 'advanced.', 'MultiColor', '-> HTTP <-']).clean()
       
       text = """
       **  The ‘Avengers (2012 film) ''The Avengers'' (2012 film)  , the sixth installment in the Marvel Cinematic Universe franchise 2
@@ -64,7 +65,7 @@ To test k gram stemming and to find similar words.
       result = Yaki(text).extract()
       #console.log result.terms
       #console.log result.similarities
-      console.log result
+      #console.log result
       
       text = """
       EuGH verhandelt über Übermittlung von Nutzerdaten in die USA
@@ -78,6 +79,9 @@ To test k gram stemming and to find similar words.
       Das zuständige irische Gericht will vom EuGH wissen, ob sich der Datenschutzbeauftragte auf die Brüsseler Entscheidung berufen durfte - oder ob er nicht vielmehr selbst hätte ermitteln können oder müssen. Das Urteil wird erst in einigen Monaten gefällt.
       """
       result = Yaki(text, {language: 'de'}).extract()
+      #console.log result.tags
+      #console.log result.similarities
+      #showSimilarities result
       console.log result
       
       # Bind Words with Sopwords

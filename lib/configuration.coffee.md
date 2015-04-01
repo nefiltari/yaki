@@ -30,7 +30,7 @@ softer simmilarity level because more word variations (morphology).
       de:
         # Stemming with k-gramm (Yaki.stem)
         k: 4
-        similarity: 0.4
+        similarity: 0.45
         # Calculation (Yaki.calculate)
         entropieStrength: 2
         frequencyCoefficient: 1.0
