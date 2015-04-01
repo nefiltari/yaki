@@ -48,7 +48,7 @@ The Vocabular describe the useable letters from diffrent languages.
 ## Define Stopwords
 Stopword in multiple languages to filter high frequently words.
 
-    Yaki.Stopwords = Stopwords or null
+    Yaki.Stopwords = Stopwords
     
 ## Configuration
 The algorithms need some metrics and variables to do the right things in an acceptable range.
@@ -180,7 +180,7 @@ Cleans the result. Define a term type and normalize each word. Filter the list w
         # Filter blank terms
         entry.drop or= entry.term is ''
         # Filter with Stopwords
-        if Yaki.Stopwords
+        if Yaki.Stopwords[lang]
           stopword = _.contains Yaki.Stopwords[lang], entry.term
           entry.drop or= entry.type isnt 'akro' and stopword
         # Add to result

@@ -1,0 +1,4 @@
+# Stopwords
+Stopword support.
+  
+    @Stopwords = {}
