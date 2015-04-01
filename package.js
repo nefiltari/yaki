@@ -1,6 +1,6 @@
 Package.describe({
   name: 'nefiltari:yaki',
-  version: '0.1.6',
+  version: '0.1.7',
   summary: 'Yaki can capture relevant tags from any bunch of text.',
   git: 'https://github.com/nefiltari/yaki.git',
   documentation: 'README.md'
